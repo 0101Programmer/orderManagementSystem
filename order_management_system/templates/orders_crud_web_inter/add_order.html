@@ -37,7 +37,17 @@
 
 {% block header %}{{ header }}{% endblock %}
 
+<!-- Подключаем django-crispy-forms -->
+{% load crispy_forms_tags %}
+
 {% block content %}
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <br>
+  <button type="submit" class="btn btn-primary">Сохранить</button>
+</form>
 
 <br>
 <br>
