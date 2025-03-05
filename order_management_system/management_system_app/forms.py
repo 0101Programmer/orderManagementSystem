@@ -1,3 +1,6 @@
+import json
+from encodings.utf_16 import encode
+
 from django import forms
 from django.core.exceptions import ValidationError
 
@@ -12,6 +15,15 @@ class AddOrderForm(forms.ModelForm):
         labels = {
             'table_number': 'Номер стола',
             'items': 'Список заказанных блюд с ценами'
+        }
+        widgets = {
+            'table_number': forms.NumberInput(attrs={'placeholder': 1,
+                                                     'class': 'form-control'}),
+            'items': forms.Textarea(attrs={
+                'rows': 1,
+                'placeholder': 'Введите данные в формате JSON, например: [{"position": "Блюдо", "price": 199.99}]',
+                'class': 'form-control',
+            }),
         }
 
 # форма для удаления заказа через веб-интерфейс
