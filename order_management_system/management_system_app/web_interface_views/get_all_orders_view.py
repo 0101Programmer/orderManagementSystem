@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect
 from django.views import View
 
-from ..forms import GetOrderForm
 from ..models import Order
 
 
