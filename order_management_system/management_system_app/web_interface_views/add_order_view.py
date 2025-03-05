@@ -16,7 +16,7 @@ class AddOrder(View):
         form = AddOrderForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('/crud/add_order')
+            return redirect('add_order')
         return render(request, 'orders_crud_web_inter/add_order.html',
                       {'header': 'Добавление заказа',
                        'title': 'Order Management System',

@@ -18,7 +18,7 @@ class DeleteOrder(View):
             order_id = form.cleaned_data['order_id']  # Получаем ID заказа
             order = get_object_or_404(Order, id=order_id)  # Находим заказ
             order.delete()  # Удаляем заказ
-            return redirect('/crud/delete_order')
+            return redirect('delete_order')
         return render(request, 'orders_crud_web_inter/delete_order.html',
                       {'header': 'Удаление заказа',
                        'title': 'Order Management System',

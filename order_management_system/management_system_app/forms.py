@@ -7,7 +7,6 @@ from django.core.exceptions import ValidationError
 from .models import Order
 
 # форма для добавления заказа через веб-интерфейс
-
 class AddOrderForm(forms.ModelForm):
     class Meta:
         model = Order
@@ -38,6 +37,7 @@ class DeleteOrderForm(forms.Form):
         # Создаем список вариантов для выпадающего списка
         self.fields['order_id'].choices = [(order.id, f'{order.id}') for order in orders]
 
+# форма для просмотра заказа через веб-интерфейс
 class GetOrderForm(forms.Form):
     table_number = forms.IntegerField(label='Номер стола', required=False)
     status = forms.CharField(label='Статус заказа', required=False)
@@ -55,3 +55,22 @@ class GetOrderForm(forms.Form):
             raise ValidationError('Заполните хотя бы одно поле: номер стола или статус заказа.')
 
         return cleaned_data
+
+# форма для изменения статуса заказа через веб-интерфейс
+class UpdateOrderStatusForm(forms.Form):
+    order_id = forms.ChoiceField(label="ID заказа")
+    status = forms.ChoiceField(
+        label="Статус заказа",
+        choices=[
+            ('в ожидании', 'В ожидании'),
+            ('готово', 'Готово'),
+            ('оплачено', 'Оплачено'),
+        ]
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Получаем все заказы из базы данных
+        orders = Order.objects.all()
+        # Создаем список вариантов для выпадающего списка
+        self.fields['order_id'].choices = [(order.id, f'{order.id}') for order in orders]
