@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .drf_views.order_views import OrderAPIList
+from .drf_views.order_views import OrderAPIList, OrderAPICreate
 from .web_interface_views.add_order_view import AddOrder
 from .web_interface_views.delete_order_view import DeleteOrder
 from .web_interface_views.get_all_orders_view import GetAllOrders
@@ -18,5 +18,6 @@ urlpatterns = [
     path('crud/get_total_revenue', GetTotalRevenue.as_view(), name='get_total_revenue'),
 
     # urls для API
+    path('api/v1/order_create/', OrderAPICreate.as_view(), name='order_create'),
     path('api/v1/order_list/', OrderAPIList.as_view(), name='order_list'),
 ]

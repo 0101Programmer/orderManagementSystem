@@ -20,9 +20,8 @@ class Order(models.Model):
                                        '[{"position": "Картофель фри", "price": 199.99}, '
                                        '{"position": "Шашлык", "price": 454.99}, ...]')
 
-    total_price = models.FloatField(default=0.0, help_text=
-    'Общая стоимость заказа, которая вычисляется автоматически.'
-    'Чтобы избежать ошибок, если поле не будет заполнено, устанавливаем дефолтное значение')
+    total_price = models.FloatField(help_text=
+    'Общая стоимость заказа, которая вычисляется автоматически.')
 
     status = models.CharField(default='в ожидании', max_length=50,
                               help_text='Статус заказа: “в ожидании”, “готово”, “оплачено”')
@@ -46,9 +45,9 @@ class Order(models.Model):
 
             # Проверяем наличие и тип ключей
             if 'position' not in item or not isinstance(item['position'], str):
-                raise ValidationError({'items': 'Каждый элемент items должен содержать ключ "position" в строковом представлении.'})
+                raise ValidationError({'items': 'Каждый элемент items должен содержать ключ "position", а значение должно быть в строковом представлении.'})
             if 'price' not in item or not isinstance(item['price'], (int, float)):
-                raise ValidationError({'items': 'Каждый элемент items должен содержать ключ "price" в числовом представлении.'})
+                raise ValidationError({'items': 'Каждый элемент items должен содержать ключ "price", а значение должно быть в числовом представлении.'})
 
 
     # переопределение метода save для пересчёта итоговой суммы заказа
