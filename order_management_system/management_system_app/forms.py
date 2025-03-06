@@ -1,5 +1,3 @@
-import json
-from encodings.utf_16 import encode
 
 from django import forms
 from django.core.exceptions import ValidationError

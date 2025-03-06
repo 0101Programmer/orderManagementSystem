@@ -14,13 +14,16 @@ class Order(models.Model):
     table_number = models.IntegerField(help_text='Номер стола, например: 1, 2, 3...',
                                        validators=[MinValueValidator(1,
                                                                      message='Номер стола должен быть больше 0.')])
+
     items = models.JSONField(default=default_items,
                              help_text='Список заказанных блюд с ценами, например: '
                                        '[{"position": "Картофель фри", "price": 199.99}, '
                                        '{"position": "Шашлык", "price": 454.99}, ...]')
+
     total_price = models.FloatField(default=0.0, help_text=
     'Общая стоимость заказа, которая вычисляется автоматически.'
     'Чтобы избежать ошибок, если поле не будет заполнено, устанавливаем дефолтное значение')
+
     status = models.CharField(default='в ожидании', max_length=50,
                               help_text='Статус заказа: “в ожидании”, “готово”, “оплачено”')
 
