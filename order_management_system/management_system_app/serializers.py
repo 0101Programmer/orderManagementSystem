@@ -58,4 +58,11 @@ class OrderUpdateStatusSerializer(serializers.ModelSerializer):
         if data.get('status') not in valid_statuses:
             raise serializers.ValidationError({"status": "Заполните поле со статусом заказа допустимыми значениями"})
 
+        # Получаем текущий объект Order
+        instance = self.instance
+
+        # Если новый статус совпадает с текущим, удаляем его из data, чтобы не делать лишний запрос в базу данных
+        if instance and data.get('status') == instance.status:
+            data.pop('status', None)
+
         return data
