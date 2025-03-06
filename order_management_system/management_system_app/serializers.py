@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Order
 
 
-# сериализатор для передачи модели Order в API представления
+# сериализатор для передачи модели Order в API представления (получение/добавление)
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
@@ -37,5 +37,25 @@ class OrderSerializer(serializers.ModelSerializer):
             if 'price' not in item or not isinstance(item['price'], (int, float)):
                 raise serializers.ValidationError(
                     {'items': 'Каждый элемент items должен содержать ключ "price", а значение должно быть в числовом представлении.'})
+
+        return data
+
+# сериализатор для передачи модели Order в API представления (обновление статуса)
+class OrderUpdateStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ('id', 'table_number', 'items', 'total_price', 'status')
+        # поля, которые создавать/редактировать вручную нельзя
+        read_only_fields = ('id', 'table_number', 'items', 'total_price')
+
+    def validate(self, data):
+        # Проверяем, что поле status не пустое
+        if not data.get('status'):
+            raise serializers.ValidationError({"status": "Заполните поле со статусом заказа"})
+
+        # Проверяем, что в поле status находится одно из допустимых значений для статуса заказа
+        valid_statuses = ['в ожидании', 'готово', 'оплачено']
+        if data.get('status') not in valid_statuses:
+            raise serializers.ValidationError({"status": "Заполните поле со статусом заказа допустимыми значениями"})
 
         return data
