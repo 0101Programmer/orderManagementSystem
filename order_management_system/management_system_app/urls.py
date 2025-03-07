@@ -12,7 +12,9 @@ from .web_interface_views.update_order_items_view import UpdateOrderItems
 from .web_interface_views.update_order_status_view import UpdateOrderStatus
 
 urlpatterns = [
-    # urls для CRUD запросов в БД с помощью веб интерфейса:
+# -----------------------------------------------------------------------------
+# urls для CRUD запросов в БД с помощью веб интерфейса:
+# -----------------------------------------------------------------------------
     path('crud/add_order', AddOrder.as_view(), name='add_order'),
     path('crud/delete_order', DeleteOrder.as_view(), name='delete_order'),
     path('crud/get_order', GetOrder.as_view(), name='get_order'),
@@ -20,8 +22,9 @@ urlpatterns = [
     path('crud/update_order_status', UpdateOrderStatus.as_view(), name='update_order_status'),
     path('crud/update_order_items/<int:pk>/', UpdateOrderItems.as_view(), name='update_order_items'),
     path('crud/get_total_revenue', GetTotalRevenue.as_view(), name='get_total_revenue'),
-
-    # urls для API:
+# -----------------------------------------------------------------------------
+# urls для API:
+# -----------------------------------------------------------------------------
     path('api/v1/order_create/', OrderAPICreate.as_view(), name='order_create'),
 
     # следующий запрос возвращает как все заказы, так и по параметрам status и table_number,
