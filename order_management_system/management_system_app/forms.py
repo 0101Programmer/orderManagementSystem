@@ -18,7 +18,6 @@ class AddOrderForm(forms.ModelForm):
                                                      'class': 'form-control'}),
             'items': forms.Textarea(attrs={
                 'rows': 1,
-                'placeholder': 'Введите данные в формате JSON, например: [{"position": "Блюдо", "price": 199.99}]',
                 'class': 'form-control',
             }),
         }
@@ -72,3 +71,16 @@ class UpdateOrderStatusForm(forms.Form):
         orders = Order.objects.all()
         # Создаем список вариантов для выпадающего списка
         self.fields['order_id'].choices = [(order.id, f'{order.id}') for order in orders]
+
+# форма для изменения содержимого заказа через веб-интерфейс
+class UpdateOrderItemsForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ['items']
+
+        widgets = {
+            'items': forms.Textarea(attrs={
+                'rows': 1,
+                'class': 'form-control',
+            }),
+        }

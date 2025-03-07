@@ -18,7 +18,8 @@ class Order(models.Model):
     items = models.JSONField(default=default_items,
                              help_text='Список заказанных блюд с ценами, например: '
                                        '[{"position": "Картофель фри", "price": 199.99}, '
-                                       '{"position": "Шашлык", "price": 454.99}, ...]')
+                                       '{"position": "Шашлык", "price": 454.99}, ...] '
+                                       'Обратите внимание, что кавычки должны быть двойными')
 
     total_price = models.FloatField(help_text=
     'Общая стоимость заказа, которая вычисляется автоматически.')
