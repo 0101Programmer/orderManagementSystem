@@ -3,6 +3,7 @@ from django.urls import path
 from .drf_views.get_total_revenue_api_view import OrderAPIGetTotalRevenue
 from .drf_views.order_views import OrderAPIList, OrderAPICreate, OrderAPIUpdateStatus, OrderAPIDelete, \
     OrderAPIUpdateItems
+from .views import HomeView
 from .web_interface_views.add_order_view import AddOrder
 from .web_interface_views.delete_order_view import DeleteOrder
 from .web_interface_views.get_all_orders_view import GetAllOrders
@@ -12,7 +13,8 @@ from .web_interface_views.update_order_items_view import UpdateOrderItems
 from .web_interface_views.update_order_status_view import UpdateOrderStatus
 
 urlpatterns = [
-# -----------------------------------------------------------------------------
+    path('', HomeView.as_view(), name='home'),
+    # -----------------------------------------------------------------------------
 # urls для CRUD запросов в БД с помощью веб интерфейса:
 # -----------------------------------------------------------------------------
     path('crud/add_order', AddOrder.as_view(), name='add_order'),
