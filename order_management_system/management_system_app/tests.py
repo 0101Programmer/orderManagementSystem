@@ -75,7 +75,6 @@ class OrderAPIGetTotalRevenueTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertJSONEqual(response.content, expected_data)
 
-
 class OrderAPICreateTestCase(TestCase):
     def setUp(self):
         # Создаем клиент для выполнения запросов
@@ -331,6 +330,74 @@ class OrderAPIUpdateStatusTestCase(TestCase):
         self.order.refresh_from_db()  # Обновляем объект из базы данных
         self.assertEqual(self.order.table_number, 4)  # Поле table_number не изменилось
         self.assertEqual(self.order.status, 'готово')  # Поле status изменилось
+
+class OrderAPIUpdateItemsTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.order = Order.objects.create(
+            table_number=6,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}]
+        )
+        # URL для обновления содержимого заказа
+        self.url = reverse('order_update_items', args=[self.order.id])
+
+    def test_update_items_valid_data(self):
+        # Валидные данные для обновления содержимого
+        valid_data = {
+            'items': [{"position": "Жаркое", "price": 499.99}, {"position": "Сок", "price": 200.50}]
+        }
+
+        # Выполняем PATCH-запрос
+        response = self.client.patch(self.url, data=valid_data, format='json')
+
+        # Проверяем, что статус заказа обновлен успешно
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order.refresh_from_db()  # Обновляем объект из базы данных
+        self.assertEqual(self.order.items, [{"position": "Жаркое", "price": 499.99},
+                                            {"position": "Сок", "price": 200.50}])
+
+    def test_update_items_invalid_data(self):
+        # Невалидные данные
+        invalid_data = {
+            'items': [{"pos": "Жаркое", "price": 499.99}, {"position": "Сок", "price": 200.50}]
+        }
+
+        response = self.client.patch(self.url, data=invalid_data, format='json')
+
+        # Проверяем, что запрос отклонен с ошибкой 400
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('items', response.data)  # Проверяем, что ошибка связана с полем items
+
+    def test_update_items_empty_data(self):
+        # Невалидные данные (пустой список)
+        invalid_data = {
+            'items': []
+        }
+
+        response = self.client.patch(self.url, data=invalid_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('items', response.data)
+
+    def test_update_items_read_only_fields(self):
+        # Попытка изменить read-only поля
+        invalid_data = {
+            'table_number': 2,  # Поле только для чтения
+            'items': [{"position": "Шаурма", "price": 199.99},
+                      {"position": "Минералка", "price": 100}]
+        }
+
+        response = self.client.patch(self.url, data=invalid_data, format='json')
+
+        # Проверяем, что запрос успешен, но read-only поля не изменились
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order.refresh_from_db()  # Обновляем объект из базы данных
+        self.assertEqual(self.order.table_number, 6)  # Поле table_number не изменилось
+        self.assertEqual(self.order.items,
+                         [{"position": "Шаурма", "price": 199.99},
+                      {"position": "Минералка", "price": 100}])  # Поле items изменилось
+
+
 
 # -----------------------------------------------------------------------------
 # Тесты для веб-интерфейса
