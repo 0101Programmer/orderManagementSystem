@@ -193,6 +193,81 @@ class OrderAPICreateTestCase(TestCase):
         self.assertNotEqual(order.total_price, 240)
         self.assertNotEqual(order.status, 'оплачено')
 
+class OrderAPIListTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse('order_list')
+
+        Order.objects.create(table_number=1, items=
+        [{"position": "Картофель фри", "price": 100}, {"position": "Шашлык", "price": 200}],
+                             status='оплачено')
+        Order.objects.create(table_number=2, items=
+        [{"position": "Картофель фри", "price": 300}, {"position": "Шашлык", "price": 400}],
+                             status='в ожидании')
+        Order.objects.create(table_number=3, items=
+        [{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+                             status='готово')
+        Order.objects.create(table_number=4, items=
+        [{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+                             status='в ожидании')
+
+    def test_get_all_orders(self):
+        # Выполняем GET-запрос без параметров
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)  # Проверяем, что возвращены все заказы
+
+    def test_filter_by_status(self):
+        # Выполняем GET-запрос с параметром status
+        response = self.client.get(self.url, {'status': 'в ожидании'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)  # Проверяем, что возвращено 2 заказа
+        # и у обоих запрошенный статус
+        self.assertEqual(response.data[0]['status'], 'в ожидании')
+        self.assertEqual(response.data[1]['status'], 'в ожидании')
+
+    def test_filter_by_table_number(self):
+        # Выполняем GET-запрос с параметром table_number
+        response = self.client.get(self.url, {'table_number': 2})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)  # Проверяем, что возвращен только один заказ
+        self.assertEqual(response.data[0]['table_number'], 2)
+
+    def test_invalid_status(self):
+        # Выполняем GET-запрос с некорректным статусом
+        response = self.client.get(self.url, {'status': 'готов'})
+
+        # Проверяем, что запрос отклонен с ошибкой 400
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('status param error', response.data)  # Проверяем, что ошибка связана с некорректным статусом
+
+    def test_invalid_table_number(self):
+        # Выполняем GET-запрос с пустым table_number
+        response = self.client.get(self.url, {'table_number': ''})
+
+        # Проверяем, что запрос отклонен с ошибкой 400
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('table_number param error', response.data)  # Проверяем, что ошибка связана с table_number
+
+    def test_invalid_params(self):
+        # Выполняем GET-запрос с некорректными параметрами
+        response = self.client.get(self.url, {'table_id': 11})
+
+        # Проверяем, что запрос отклонен с ошибкой 400
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('params error', response.data)  # Проверяем, что ошибка связана с некорректными параметрами
+
+    def test_no_orders_found(self):
+        # Выполняем GET-запрос с параметром, по которому заказы не будут найдены
+        response = self.client.get(self.url, {'table_number': 999})
+
+        # Проверяем, что запрос отклонен с ошибкой 400
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('no orders error', response.data)  # Проверяем, что ошибка связана с отсутствием заказов
+
 # -----------------------------------------------------------------------------
 # Тесты для веб-интерфейса
 # -----------------------------------------------------------------------------

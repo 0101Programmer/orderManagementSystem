@@ -25,7 +25,7 @@ class OrderAPIList(generics.ListAPIView):
         if invalid_params:
             raise serializers.ValidationError(
                 {
-                    "error": f"Некорректные параметры запроса: {', '.join(invalid_params)}. Допустимые параметры: {', '.join(valid_params)}"}
+                    "params error": f"Некорректные параметры запроса: {', '.join(invalid_params)}. Допустимые параметры: {', '.join(valid_params)}"}
             )
 
         # Получаем значения параметров
@@ -38,19 +38,19 @@ class OrderAPIList(generics.ListAPIView):
         # Проверяем, не переданы ли оба параметра
         if status and table_number:
             raise serializers.ValidationError(
-                {"error": "Можно искать только по одному параметру: status или table_number."}
+                {"params error": "Можно искать только по одному параметру: status или table_number."}
             )
 
         # Проверяем, что status передан и не пустой
         if status is not None:  # Параметр присутствует в запросе
             if status == '':  # Параметр есть, но значение пустое
                 raise serializers.ValidationError(
-                    {"error": "Параметр 'status' не может быть пустым."}
+                    {"status param error": "Параметр 'status' не может быть пустым."}
                 )
             if status not in valid_statuses:  # Некорректное значение
                 raise serializers.ValidationError(
                     {
-                        "error": f"Некорректное значение статуса: '{status}'. Допустимые значения: {', '.join(valid_statuses)}"}
+                        "status param error": f"Некорректное значение статуса: '{status}'. Допустимые значения: {', '.join(valid_statuses)}"}
                 )
             # Фильтруем по status, если он корректен
             queryset = queryset.filter(status=status)
@@ -59,14 +59,14 @@ class OrderAPIList(generics.ListAPIView):
         if table_number is not None:  # Параметр присутствует в запросе
             if table_number == '':  # Параметр есть, но значение пустое
                 raise serializers.ValidationError(
-                    {"error": "Параметр 'table_number' не может быть пустым."}
+                    {"table_number param error": "Параметр 'table_number' не может быть пустым."}
                 )
             # Фильтруем по table_number
             queryset = queryset.filter(table_number=table_number)
 
         # Если заказы не найдены, выбрасываем ошибку
         if not queryset.exists():
-            raise serializers.ValidationError({"error": "Заказы не найдены."})
+            raise serializers.ValidationError({"no orders error": "Заказы не найдены."})
 
         # если параметры не заданы, то возвращаются все заказы
         return queryset
