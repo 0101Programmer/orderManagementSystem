@@ -1,8 +1,9 @@
-from django.test import TestCase, RequestFactory
+from django.test import TestCase, RequestFactory, Client
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from .forms import AddOrderForm, DeleteOrderForm, GetOrderForm, UpdateOrderItemsForm, UpdateOrderStatusForm
 from .models import Order
 from .drf_views.get_total_revenue_api_view import OrderAPIGetTotalRevenue
 from django.urls import reverse
@@ -424,7 +425,419 @@ class OrderAPIDeleteTestCase(TestCase):
 
         # Проверяем, что запрос отклонен с ошибкой 404
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
 # -----------------------------------------------------------------------------
 # Тесты для веб-интерфейса
 # -----------------------------------------------------------------------------
+class AddOrderTestCase(TestCase):
+    def setUp(self):
+        # Создаем клиент для выполнения запросов
+        self.client = Client()
+        # URL для добавления заказа
+        self.url = reverse('add_order')
+
+    def test_get_add_order_form(self):
+        # Выполняем GET-запрос
+        response = self.client.get(self.url)
+
+        # Проверяем, что форма отображается
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/add_order.html')
+        self.assertIsInstance(response.context['form'], AddOrderForm)
+        self.assertContains(response, 'Добавление заказа')
+
+    def test_post_valid_data(self):
+        # Валидные данные для добавления заказа
+        valid_data = {
+            'table_number': 7,
+            'items': '[{"position": "Картофель фри", "price": 500}]'
+        }
+
+        # Выполняем POST-запрос
+        response = self.client.post(self.url, data=valid_data)
+
+        # Проверяем, что заказ создан успешно
+        self.assertEqual(response.status_code, 302)  # Проверяем перенаправление
+        self.assertEqual(Order.objects.count(), 1)  # Проверяем, что заказ создан
+
+        # Проверяем, что произошло перенаправление
+        self.assertRedirects(response, reverse('add_order'))
+
+    def test_post_invalid_data(self):
+        # Невалидные данные (отсутствует поле items)
+        invalid_data = {
+            'table_number': 9,
+        }
+
+        response = self.client.post(self.url, data=invalid_data)
+
+        # Проверяем, что форма возвращается с ошибками
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/add_order.html')
+        self.assertFormError(response.context['form'], 'items', 'Обязательное поле.')
+
+class DeleteOrderTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        # Создаем тестовые заказы
+        self.order1 = Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+        )
+        self.order2 = Order.objects.create(
+            table_number=14,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+        )
+        # URL для удаления заказа
+        self.url = reverse('delete_order')
+
+    def test_get_delete_order_form(self):
+        # Выполняем GET-запрос
+        response = self.client.get(self.url)
+
+        # Проверяем, что форма отображается
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/delete_order.html')
+        self.assertIsInstance(response.context['form'], DeleteOrderForm)
+        self.assertContains(response, 'Удаление заказа')
+
+    def test_post_valid_data(self):
+        # Валидные данные для удаления заказа
+        valid_data = {
+            'order_id': self.order1.id
+        }
+
+        # Выполняем POST-запрос
+        response = self.client.post(self.url, data=valid_data)
+
+        # Проверяем, что заказ удален успешно
+        self.assertEqual(response.status_code, 302)  # Проверяем перенаправление
+        self.assertFalse(Order.objects.filter(id=self.order1.id).exists())  # Проверяем, что заказ удален
+
+        # Проверяем, что произошло перенаправление
+        self.assertRedirects(response, reverse('delete_order'))
+
+class GetAllOrdersTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.order1 = Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+        )
+        self.order2 = Order.objects.create(
+            table_number=14,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+        )
+
+        # URL для получения всех заказов
+        self.url = reverse('get_all_orders')
+
+    def test_get_all_orders(self):
+        # Выполняем GET-запрос
+        response = self.client.get(self.url)
+
+        # Проверяем, что запрос успешен
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_all_orders.html')
+
+        # Проверяем, что в контексте передаются все заказы
+        self.assertIn('orders', response.context)
+        self.assertEqual(len(response.context['orders']), 2)  # Проверяем, что переданы 2 заказа
+
+        # Проверяем, что ID заказов отображаются на странице
+        self.assertContains(response, 4)
+        self.assertContains(response, 14)
+
+class GetOrderTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        self.order1 = Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='в ожидании'
+        )
+        self.order2 = Order.objects.create(
+            table_number=14,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='готово'
+        )
+        self.order3 = Order.objects.create(
+            table_number=18,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='готово'
+        )
+        self.order4 = Order.objects.create(
+            table_number=18,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='оплачено'
+        )
+
+        # URL для поиска заказов по номеру стола или статусу
+        self.url = reverse('get_order')
+
+    def test_get_order_form(self):
+        # Выполняем GET-запрос
+        response = self.client.get(self.url)
+
+        # Проверяем, что форма отображается
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_order.html')
+        self.assertIsInstance(response.context['form'], GetOrderForm)
+        self.assertContains(response, 'Поиск заказа')
+
+    def test_search_by_table_number(self):
+        # Валидные данные для поиска по номеру стола
+        search_data = {
+            'table_number': 18
+        }
+
+        # Выполняем GET-запрос с параметрами поиска
+        response = self.client.get(self.url, data=search_data)
+
+        # Проверяем, что запрос успешен
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_order.html')
+
+        # Проверяем, что в контексте передаются найденные заказы
+        self.assertIn('orders', response.context)
+        self.assertEqual(len(response.context['orders']), 2)  # Проверяем, что найдено 2 заказа
+        self.assertEqual(response.context['orders'][0].table_number,
+                         18)  # Проверяем, что каждый заказ соответствует номеру стола
+        self.assertEqual(response.context['orders'][1].table_number,
+                         18)
+
+    def test_search_by_status(self):
+        # Валидные данные для поиска по статусу
+        search_data = {
+            'status': 'готово'
+        }
+
+        response = self.client.get(self.url, data=search_data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_order.html')
+
+        # Проверяем, что в контексте передаются найденные заказы
+        self.assertIn('orders', response.context)
+        self.assertEqual(len(response.context['orders']), 2)  # Проверяем, что найдено 2 заказа
+        self.assertEqual(response.context['orders'][0].status, 'готово')  # Проверяем, что каждый заказ соответствует статусу
+        self.assertEqual(response.context['orders'][1].status, 'готово')
+
+    def test_search_with_both_fields(self):
+        # Невалидные данные (заполнены оба поля)
+        invalid_data = {
+            'table_number': 18,
+            'status': 'в ожидании'
+        }
+
+        # Выполняем GET-запрос с параметрами поиска
+        response = self.client.get(self.url, data=invalid_data)
+
+        # Проверяем, что форма возвращается с ошибками
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_order.html')
+        self.assertFormError(response.context['form'], None,
+                             'Заполните только одно поле: либо номер стола, либо статус заказа.')
+
+    def test_search_with_no_fields(self):
+        # Невалидные данные (не заполнено ни одно поле)
+        invalid_data = {
+            'table_number': '',
+            'status': ''
+        }
+
+        response = self.client.get(self.url, data=invalid_data)
+
+        # Проверяем, что форма возвращается с ошибками
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_order.html')
+        self.assertFormError(response.context['form'], None,
+                             'Заполните хотя бы одно поле: номер стола или статус заказа.')
+
+class GetTotalRevenueTestCase(TestCase):
+    def setUp(self):
+        # Создаем клиент для выполнения запросов
+        self.client = Client()
+        # URL для расчета выручки
+        self.url = reverse('get_total_revenue')
+
+    def test_get_total_revenue_with_paid_orders(self):
+        # Создаем оплаченные заказы
+        Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='оплачено'
+        )
+        Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='оплачено'
+        )
+
+        # Выполняем GET-запрос
+        response = self.client.get(self.url)
+
+        # Проверяем, что запрос успешен
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_total_revenue.html')
+
+        # Проверяем, что в контексте передается правильная выручка
+        self.assertIn('total_revenue', response.context)
+        self.assertEqual(response.context['total_revenue'], 2200)
+
+        # Проверяем, что выручка отображается на странице
+        self.assertContains(response, '2200')
+
+    def test_get_total_revenue_with_no_paid_orders(self):
+        # Создаем заказы с другими статусами
+        Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='готово'
+        )
+        Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='в ожидании'
+        )
+
+        response = self.client.get(self.url)
+
+        # Проверяем, что запрос успешен
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_total_revenue.html')
+
+        # Проверяем, что в контексте передается выручка 0
+        self.assertIn('total_revenue', response.context)
+        self.assertEqual(response.context['total_revenue'], 0)  # Нет оплаченных заказов
+
+        # Проверяем, что выручка 0 отображается на странице
+        self.assertContains(response, '0')
+
+    def test_get_total_revenue_with_empty_database(self):
+        # База данных пуста (нет заказов)
+
+        response = self.client.get(self.url)
+
+        # Проверяем, что запрос успешен
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/get_total_revenue.html')
+
+        # Проверяем, что в контексте передается выручка 0
+        self.assertIn('total_revenue', response.context)
+        self.assertEqual(response.context['total_revenue'], 0)  # Нет заказов
+
+        # Проверяем, что выручка 0 отображается на странице
+        self.assertContains(response, '0')
+
+class UpdateOrderItemsTestCase(TestCase):
+    def setUp(self):
+        # Создаем клиент для выполнения запросов
+        self.client = Client()
+        # Создаем тестовый заказ
+        self.order = Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='оплачено'
+        )
+        # URL для обновления заказа
+        self.url = reverse('update_order_items', args=[self.order.id])
+
+    def test_get_update_order_items_form(self):
+        # Выполняем GET-запрос
+        response = self.client.get(self.url)
+
+        # Проверяем, что форма отображается
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/update_order_items.html')
+        self.assertIsInstance(response.context['form'], UpdateOrderItemsForm)
+        self.assertContains(response, 'Изменение содержимого заказа')
+
+    def test_post_valid_data(self):
+        # Валидные данные для обновления заказа
+        valid_data = {
+            'items': '[{"position": "Кола зеро", "price": 50}, {"position": "Шаурма", "price": 199.99}]'
+        }
+
+        # Выполняем POST-запрос
+        response = self.client.post(self.url, data=valid_data)
+
+        # Проверяем, что заказ обновлен успешно
+        self.assertEqual(response.status_code, 302)  # Проверяем перенаправление
+        self.order.refresh_from_db()  # Обновляем объект из базы данных
+        self.assertEqual(self.order.items, [{"position": "Кола зеро", "price": 50},
+                                            {"position": "Шаурма", "price": 199.99}])  # Проверяем, что items обновлены
+
+        # Проверяем, что произошло перенаправление
+        self.assertRedirects(response, reverse('update_order_items', args=[self.order.id]))
+
+    def test_post_invalid_data(self):
+        # Невалидные данные (items не является JSON)
+        invalid_data = {
+            'items': 'Картофель, овощи, 150, 99'
+        }
+
+        response = self.client.post(self.url, data=invalid_data)
+
+        # Проверяем, что форма возвращается с ошибками
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/update_order_items.html')
+        self.assertFormError(response.context['form'], 'items', 'Введите корректный JSON.')
+
+    def test_post_empty_data(self):
+        # Невалидные данные (пустое поле items)
+        invalid_data = {
+            'items': ''
+        }
+
+        response = self.client.post(self.url, data=invalid_data)
+
+        # Проверяем, что форма возвращается с ошибками
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/update_order_items.html')
+        self.assertFormError(response.context['form'], 'items', 'Обязательное поле.')
+
+class UpdateOrderStatusTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        self.order1 = Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='оплачено'
+        )
+        self.order2 = Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='в ожидании'
+        )
+        # URL для обновления статуса заказа
+        self.url = reverse('update_order_status')
+
+    def test_get_update_order_status_form(self):
+        # Выполняем GET-запрос
+        response = self.client.get(self.url)
+
+        # Проверяем, что форма отображается
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_crud_web_inter/update_order_status.html')
+        self.assertIsInstance(response.context['form'], UpdateOrderStatusForm)
+        self.assertContains(response, 'Изменение статуса заказа')
+
+    def test_post_valid_data(self):
+        # Валидные данные для обновления статуса заказа
+        valid_data = {
+            'order_id': self.order1.id,
+            'status': 'готово'
+        }
+
+        # Выполняем POST-запрос
+        response = self.client.post(self.url, data=valid_data)
+
+        # Проверяем, что статус заказа обновлен успешно
+        self.assertEqual(response.status_code, 302)  # Проверяем перенаправление
+        self.order1.refresh_from_db()  # Обновляем объект из базы данных
+        self.assertEqual(self.order1.status, 'готово')  # Проверяем, что статус обновлен
+
+        # Проверяем, что произошло перенаправление
+        self.assertRedirects(response, reverse('update_order_status'))
