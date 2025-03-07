@@ -268,6 +268,70 @@ class OrderAPIListTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('no orders error', response.data)  # Проверяем, что ошибка связана с отсутствием заказов
 
+class OrderAPIUpdateStatusTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        # Создаем тестовый заказ
+        self.order = Order.objects.create(
+            table_number=4,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+            status='в ожидании'
+        )
+        # URL для обновления статуса заказа
+        self.url = reverse('order_update_status', args=[self.order.id])
+
+    def test_update_status_valid_data(self):
+        # Валидные данные для обновления статуса
+        valid_data = {
+            'status': 'готово'
+        }
+
+        # Выполняем PATCH-запрос
+        response = self.client.patch(self.url, data=valid_data, format='json')
+
+        # Проверяем, что статус заказа обновлен успешно
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order.refresh_from_db()  # Обновляем объект из базы данных
+        self.assertEqual(self.order.status, 'готово')
+
+    def test_update_status_invalid_data(self):
+        # Невалидные данные (недопустимый статус)
+        invalid_data = {
+            'status': 'доставка'
+        }
+
+        response = self.client.patch(self.url, data=invalid_data, format='json')
+
+        # Проверяем, что запрос отклонен с ошибкой 400
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('status', response.data)  # Проверяем, что ошибка связана с полем status
+
+    def test_update_status_empty_data(self):
+        # Невалидные данные (пустой статус)
+        invalid_data = {
+            'status': ''
+        }
+
+        response = self.client.patch(self.url, data=invalid_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('status', response.data)  # Проверяем, что ошибка связана с полем status
+
+    def test_update_status_read_only_fields(self):
+        # Попытка изменить read-only поля
+        invalid_data = {
+            'table_number': 2,  # Поле только для чтения
+            'status': 'готово'
+        }
+
+        response = self.client.patch(self.url, data=invalid_data, format='json')
+
+        # Проверяем, что запрос успешен, но read-only поля не изменились
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.order.refresh_from_db()  # Обновляем объект из базы данных
+        self.assertEqual(self.order.table_number, 4)  # Поле table_number не изменилось
+        self.assertEqual(self.order.status, 'готово')  # Поле status изменилось
+
 # -----------------------------------------------------------------------------
 # Тесты для веб-интерфейса
 # -----------------------------------------------------------------------------

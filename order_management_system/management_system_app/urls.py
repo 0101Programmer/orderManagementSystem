@@ -30,7 +30,7 @@ urlpatterns = [
     path('api/v1/order_list/', OrderAPIList.as_view(), name='order_list'),
 
     path('api/v1/order_update_status/<int:pk>/', OrderAPIUpdateStatus.as_view(), name='order_update_status'),
-    path('api/v1/order_update_items/<int:pk>/', OrderAPIUpdateItems.as_view(), name='order_update_status'),
+    path('api/v1/order_update_items/<int:pk>/', OrderAPIUpdateItems.as_view(), name='order_update_items'),
     path('api/v1/order_delete/<int:pk>/', OrderAPIDelete.as_view(), name='order_delete'),
     path('api/v1/get_total_revenue/', OrderAPIGetTotalRevenue.as_view(), name='get_total_revenue_by_api'),
 
