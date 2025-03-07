@@ -397,7 +397,33 @@ class OrderAPIUpdateItemsTestCase(TestCase):
                          [{"position": "Шаурма", "price": 199.99},
                       {"position": "Минералка", "price": 100}])  # Поле items изменилось
 
+class OrderAPIDeleteTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.order = Order.objects.create(
+            table_number=10,
+            items=[{"position": "Картофель фри", "price": 500}, {"position": "Шашлык", "price": 600}],
+        )
+        # URL для удаления заказа
+        self.url = reverse('order_delete', args=[self.order.id])
 
+    def test_delete_order(self):
+        # Выполняем DELETE-запрос
+        response = self.client.delete(self.url)
+
+        # Проверяем, что заказ удален успешно
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Order.objects.filter(id=self.order.id).exists())  # Проверяем, что заказ удален из базы данных
+
+    def test_delete_nonexistent_order(self):
+        # Удаляем заказ
+        self.order.delete()
+
+        # Выполняем DELETE-запрос для несуществующего заказа
+        response = self.client.delete(self.url)
+
+        # Проверяем, что запрос отклонен с ошибкой 404
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 # -----------------------------------------------------------------------------
 # Тесты для веб-интерфейса
