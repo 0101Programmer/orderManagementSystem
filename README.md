@@ -40,9 +40,13 @@
 ## Установка зависимостей
 > pip install -r requirements.txt
 
-## #3 Запуск сервера
+## #3 Миграции и запуск сервера
 
 > cd order_management_system
+
+> python manage.py makemigrations
+
+> python manage.py migrate
 
 > python manage.py runserver
 
