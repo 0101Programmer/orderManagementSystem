@@ -213,6 +213,66 @@
 
 ![Снимок экрана 2025-03-08 073614](https://github.com/user-attachments/assets/23626bdd-722c-447b-878c-3a681a03370e)
 
+## Или: _api/v1/order_list/?status=в%20ожидании_
+
+![Снимок экрана 2025-03-08 090126](https://github.com/user-attachments/assets/4efb1417-631e-48df-af64-e27c1068f815)
+
+
+## # Обновление статуса заказа (с ID 5) _api/v1/order_update_status/5/_
+
+![Снимок экрана 2025-03-08 090444](https://github.com/user-attachments/assets/51c34fe3-42c3-4d2c-83bb-a26409d396b7)
+
+![Снимок экрана 2025-03-08 090458](https://github.com/user-attachments/assets/43a19d35-e17c-4e00-b294-52d1a841ccc1)
+
+![Снимок экрана 2025-03-08 090507](https://github.com/user-attachments/assets/35871631-8564-4ba4-9f4e-67034eb283b3)
+
+
+## # Обновление содержимого заказа (с ID 3) _api/v1/order_update_items/3/_
+
+![Снимок экрана 2025-03-08 090658](https://github.com/user-attachments/assets/b8f6b37b-9f39-4c11-a32b-c0475a186097)
+
+### (Запятую после второй скобки всё-таки необходимо убрать, если после неё не идёт ещё одна позиция заказа)
+
+![Снимок экрана 2025-03-08 090800](https://github.com/user-attachments/assets/efb52266-57ee-413c-bf5f-c2b6454585c9)
+
+![Снимок экрана 2025-03-08 090824](https://github.com/user-attachments/assets/7211a032-5093-4c15-b1d9-26cb15ba02a4)
+
+## # Удаление заказа (с ID 10) _api/v1/order_delete/10/_
+
+![Снимок экрана 2025-03-08 091319](https://github.com/user-attachments/assets/acdbd639-39a5-48c2-b07d-31a9a9fc850e)
+
+![Снимок экрана 2025-03-08 091328](https://github.com/user-attachments/assets/a412072e-3af4-4b3b-9488-de97f5999fc9)
+
+![Снимок экрана 2025-03-08 091339](https://github.com/user-attachments/assets/eb8cdb33-51ed-411b-bbe2-dc798e31d23e)
+
+### Удалить снова его уже не выйдет (потому что его больше нет в базе данных)
+
+![Снимок экрана 2025-03-08 091357](https://github.com/user-attachments/assets/9fb33aba-4b09-4475-affb-c29c65277bdc)
+
+
+## # Расчет выручки за смену _api/v1/get_total_revenue/_
+
+### Получаем сумму за все заказы в статусе «Оплачено»
+
+![Снимок экрана 2025-03-08 091658](https://github.com/user-attachments/assets/18811174-779d-4955-85a4-a1f789f323be)
+
+![Снимок экрана 2025-03-08 091717](https://github.com/user-attachments/assets/bd597d71-8a6a-4538-9f76-0a035f31c24e)
+
+# Last but not least — покрытие ключевых функций тестами.
+
+![Снимок экрана 2025-03-08 092053](https://github.com/user-attachments/assets/465a54a8-c62c-48c2-8cb6-ae06f122077b)
+
+## # Проверим покрытие
+> coverage run --source='.' manage.py test
+
+> coverage report
+
+### Покрытие составляет 96%
+
+![Снимок экрана 2025-03-08 092317](https://github.com/user-attachments/assets/997d33d0-d5a3-47ba-a93d-b0b684f8a1db)
+
+
+
 
 
 
